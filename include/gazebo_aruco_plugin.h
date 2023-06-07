@@ -39,7 +39,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/aruco.hpp>
-#include <opencv2/aruco/dictionary.hpp>
+#include <opencv2/objdetect/aruco_dictionary.hpp>
 #include <opencv2/core.hpp>
 
 #include <vector>
@@ -83,11 +83,11 @@ namespace gazebo
       std::string namespace_;
       std::string model_name_;
       std::string land_pad_name_;
-      
-      float markerLength_mm; 
 
-      cv::Ptr<cv::aruco::Dictionary> marker_dict;
-      cv::Ptr<cv::aruco::DetectorParameters> detectorParams;
+      float markerLength_mm;
+
+      cv::aruco::DetectorParameters detectorParams;
+      cv::aruco::ArucoDetector detector;
 
       cv::Mat camMatrix = (cv::Mat_<double>(3, 3) << 3.9877559882561974e+02, 0., 3.2546639260681752e+02, 0., 3.9651789974056226e+02, 2.3906162259594086e+02, 0., 0., 1.);
       cv::Mat distCoeffs = (cv::Mat_<double>(1, 5) << -7.4500551440667862e-02, -1.5464660896318899e-01, -4.7134015104217627e-04, 3.6767321906851489e-03, 2.8738933210835571e-01);

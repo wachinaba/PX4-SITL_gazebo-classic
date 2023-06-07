@@ -61,7 +61,7 @@ void arucoMarkerPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
 
   if (!_sensor){
     gzerr << "Invalid sensor pointer.\n";
-    return; 
+    return;
   }
 
   this->parentSensor = std::dynamic_pointer_cast<sensors::CameraSensor>(_sensor);
@@ -75,7 +75,7 @@ void arucoMarkerPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
   this->world_ = physics::get_world(this->parentSensor->WorldName());
 
   float hfov;
-  float update_rate = -1; 
+  float update_rate = -1;
 
 #if GAZEBO_MAJOR_VERSION >= 7
   this->camera = this->parentSensor->Camera();
@@ -103,7 +103,7 @@ void arucoMarkerPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
     update_rate = _sdf->GetElement("update_rate")->Get<int>();
   }
 
-  std::cout << "[Gazebo Aruco Plugin] Image info -- width: " << this->width << " height: " << this->height << " format: " <<  this->format << " camera hov: " << hfov << " [deg]" << std::endl; 
+  std::cout << "[Gazebo Aruco Plugin] Image info -- width: " << this->width << " height: " << this->height << " format: " <<  this->format << " camera hov: " << hfov << " [deg]" << std::endl;
 
   if (_sdf->HasElement("robotNamespace")){
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
@@ -138,7 +138,7 @@ void arucoMarkerPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
   // store the model name
   model_name_ = names_splitted.at(0);
 
-  std::cout << "[Gazebo Aruco Plugin] Camera attached to: "<< model_name_ << std::endl; 
+  std::cout << "[Gazebo Aruco Plugin] Camera attached to: "<< model_name_ << std::endl;
 
   // Store the pointer to the model.
   if (model_ == NULL)
@@ -150,24 +150,23 @@ void arucoMarkerPlugin::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
 
   /* Get the land pad size */
   auto mo = world_->ModelByName(land_pad_name_);
-  auto link = mo->GetLink("link"); 
+  auto link = mo->GetLink("link");
   auto box = link->BoundingBox();
 
-  double box_length = box.XLength(); 
-  double box_width = box.YLength(); 
+  double box_length = box.XLength();
+  double box_width = box.YLength();
 
   if (box_length != box_width)
   {
     std::cout << "[Gazebo Aruco Plugin] WARNING: land pad not square." << std::endl;
   }
 
-  std::cout << "[Gazebo Aruco Plugin] Land pad size: " << box_length << " x " << box_width << " [m]" << std::endl; 
+  std::cout << "[Gazebo Aruco Plugin] Land pad size: " << box_length << " x " << box_width << " [m]" << std::endl;
 
   //init marker detection
-  this->markerLength_mm = 6.f/8 * 1000 * box_length; 
-  int dict_id = 0; 
-  this->marker_dict = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME(dict_id));  
-  this->detectorParams = cv::aruco::DetectorParameters::create();
+  this->markerLength_mm = 6.f/8 * 1000 * box_length;
+  int dict_id = 0;
+  this->detector = cv::aruco::ArucoDetector(cv::aruco::getPredefinedDictionary(cv::aruco::PredefinedDictionaryType(dict_id)), this->detectorParams);
 }
 
 /////////////////////////////////////////////////
@@ -202,7 +201,7 @@ void arucoMarkerPlugin::OnNewFrame(const unsigned char * _image,
   /* Marker detection */
   std::vector<int> marker_ids;
   std::vector<std::vector<cv::Point2f>> marker_corners, rejected_marker;
-  cv::aruco::detectMarkers(frame_gray, this->marker_dict, marker_corners, marker_ids, this->detectorParams, rejected_marker);
+  this->detector.detectMarkers(frame_gray, marker_corners, marker_ids, rejected_marker);
 
   if (this->camMatrix.total() != 0 && marker_ids.size() > 0)
   {
@@ -210,7 +209,7 @@ void arucoMarkerPlugin::OnNewFrame(const unsigned char * _image,
 
     /* Marker pose estimation in FRD [mm]*/
     cv::aruco::estimatePoseSingleMarkers(marker_corners, this->markerLength_mm, this->camMatrix, this->distCoeffs, rvec, tvec);
-    
+
     if(rvec.size() > 0){
 
       /* Convert tvec [mm] to body frame FRD [m] */
@@ -281,7 +280,7 @@ void arucoMarkerPlugin::computeRPY(cv::Mat R, float &roll, float &pitch, float &
     float sy = sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
 
     bool singular = sy < 1e-6;
- 
+
     if (!singular)
     {
         roll = atan2(R.at<double>(2,1) , R.at<double>(2,2));
